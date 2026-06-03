@@ -1,0 +1,814 @@
+{
+  "info": {
+    "_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "name": "Learn School Backoffice API",
+    "description": "NestJS REST API for the Attendance & Credit System. Base URL: http://localhost:9191\n\nAuth Flow:\n1. POST /auth/login — the Test script auto-sets {{access_token}} and {{refresh_token}}.\n2. All other protected endpoints inherit the collection-level Bearer {{access_token}} auth.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:9191",
+      "type": "string",
+      "description": "Base URL of the API server"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string",
+      "description": "JWT access token — auto-populated by the Login request Test script"
+    },
+    {
+      "key": "refresh_token",
+      "value": "",
+      "type": "string",
+      "description": "JWT refresh token — auto-populated by the Login request Test script"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "description": "Authentication endpoints — register, login, token refresh, profile management, and logout.",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@school.com\",\n  \"password\": \"password123\",\n  \"name\": \"HQ Admin\",\n  \"branchId\": null\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "register"]
+            },
+            "description": "Register a new user account. `branchId` is required for BRANCH_MANAGER / BRANCH_STAFF roles; omit or set null for HQ_ADMIN."
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json && json.accessToken) {",
+                  "    pm.collectionVariables.set('access_token', json.accessToken);",
+                  "    console.log('access_token saved:', json.accessToken.substring(0, 20) + '...');",
+                  "}",
+                  "if (json && json.refreshToken) {",
+                  "    pm.collectionVariables.set('refresh_token', json.refreshToken);",
+                  "    console.log('refresh_token saved');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@school.com\",\n  \"password\": \"password123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Authenticate and receive access + refresh tokens. The Test script automatically stores both tokens as collection variables."
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{refresh_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": { "mode": "none" },
+            "url": {
+              "raw": "{{base_url}}/auth/refresh-token",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "refresh-token"]
+            },
+            "description": "Exchange a valid refresh token (sent as Bearer) for a new access token. Uses {{refresh_token}} — NOT {{access_token}}."
+          }
+        },
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/profile",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "profile"]
+            },
+            "description": "Returns the authenticated user's profile."
+          }
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "name", "value": "Updated Name", "type": "text", "description": "Display name" },
+                { "key": "email", "value": "updated@school.com", "type": "text", "description": "Email address" },
+                { "key": "password", "value": "newpassword123", "type": "text", "description": "New password (min 8 chars) — omit to keep current" },
+                { "key": "address[houseNumber]", "value": "123/4", "type": "text" },
+                { "key": "address[village]", "value": "Moo 5", "type": "text" },
+                { "key": "address[road]", "value": "Sukhumvit Road", "type": "text" },
+                { "key": "address[district]", "value": "Watthana", "type": "text" },
+                { "key": "address[province]", "value": "Bangkok", "type": "text" },
+                { "key": "address[postalCode]", "value": "10110", "type": "text" },
+                { "key": "image", "value": "", "type": "file", "src": "", "description": "Optional profile image (jpg/jpeg/png, max 1 MB)" }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/profile",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "profile"]
+            },
+            "description": "Update the authenticated user's profile. Sent as multipart/form-data to support optional image upload."
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "body": { "mode": "none" },
+            "url": {
+              "raw": "{{base_url}}/auth/logout",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "logout"]
+            },
+            "description": "Invalidates the current refresh token (sets it to null in the DB). Returns 204 No Content."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Branches",
+      "description": "Branch management. Create/update/delete requires HQ_ADMIN role.",
+      "item": [
+        {
+          "name": "Create Branch",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Central Branch\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/branches",
+              "host": ["{{base_url}}"],
+              "path": ["branches"]
+            },
+            "description": "HQ_ADMIN only. Creates a new branch location."
+          }
+        },
+        {
+          "name": "Get All Branches",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/branches",
+              "host": ["{{base_url}}"],
+              "path": ["branches"]
+            },
+            "description": "Returns all branches. Accessible by any authenticated role."
+          }
+        },
+        {
+          "name": "Get Branch by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/branches/1",
+              "host": ["{{base_url}}"],
+              "path": ["branches", "1"]
+            },
+            "description": "Returns a single branch by its numeric ID."
+          }
+        },
+        {
+          "name": "Update Branch",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Central Branch (Renamed)\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/branches/1",
+              "host": ["{{base_url}}"],
+              "path": ["branches", "1"]
+            },
+            "description": "HQ_ADMIN only. Partially updates a branch."
+          }
+        },
+        {
+          "name": "Delete Branch",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/branches/1",
+              "host": ["{{base_url}}"],
+              "path": ["branches", "1"]
+            },
+            "description": "HQ_ADMIN only. Deletes a branch by ID."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Courses",
+      "description": "Course catalogue management. Create/update/delete requires HQ_ADMIN role.",
+      "item": [
+        {
+          "name": "Create Course",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Beginner Piano\",\n  \"totalSessions\": 12\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/courses",
+              "host": ["{{base_url}}"],
+              "path": ["courses"]
+            },
+            "description": "HQ_ADMIN only. Creates a new course definition."
+          }
+        },
+        {
+          "name": "Get All Courses",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/courses",
+              "host": ["{{base_url}}"],
+              "path": ["courses"]
+            }
+          }
+        },
+        {
+          "name": "Get Course by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/courses/1",
+              "host": ["{{base_url}}"],
+              "path": ["courses", "1"]
+            }
+          }
+        },
+        {
+          "name": "Update Course",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Intermediate Piano\",\n  \"totalSessions\": 16\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/courses/1",
+              "host": ["{{base_url}}"],
+              "path": ["courses", "1"]
+            },
+            "description": "HQ_ADMIN only. All fields are optional (PartialType)."
+          }
+        },
+        {
+          "name": "Delete Course",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/courses/1",
+              "host": ["{{base_url}}"],
+              "path": ["courses", "1"]
+            },
+            "description": "HQ_ADMIN only."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Students",
+      "description": "Student record management. Delete requires HQ_ADMIN or BRANCH_MANAGER.",
+      "item": [
+        {
+          "name": "Create Student",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Somchai Jaidee\",\n  \"email\": \"somchai@example.com\",\n  \"phone\": \"0812345678\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/students",
+              "host": ["{{base_url}}"],
+              "path": ["students"]
+            }
+          }
+        },
+        {
+          "name": "Get All Students",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/students",
+              "host": ["{{base_url}}"],
+              "path": ["students"]
+            }
+          }
+        },
+        {
+          "name": "Get Student by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/students/1",
+              "host": ["{{base_url}}"],
+              "path": ["students", "1"]
+            }
+          }
+        },
+        {
+          "name": "Get Student Packages",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/students/1/packages",
+              "host": ["{{base_url}}"],
+              "path": ["students", "1", "packages"]
+            },
+            "description": "Returns all credit packages owned by the student."
+          }
+        },
+        {
+          "name": "Get Student Bookings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/students/1/bookings",
+              "host": ["{{base_url}}"],
+              "path": ["students", "1", "bookings"]
+            },
+            "description": "Returns all bookings for the student."
+          }
+        },
+        {
+          "name": "Update Student",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Somchai Jaidee Updated\",\n  \"phone\": \"0898765432\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/students/1",
+              "host": ["{{base_url}}"],
+              "path": ["students", "1"]
+            },
+            "description": "All fields are optional (PartialType)."
+          }
+        },
+        {
+          "name": "Delete Student",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/students/1",
+              "host": ["{{base_url}}"],
+              "path": ["students", "1"]
+            },
+            "description": "HQ_ADMIN or BRANCH_MANAGER only. Soft-deletes the student (sets deletedAt)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Credit Packages",
+      "description": "Credit package purchase and management for students.",
+      "item": [
+        {
+          "name": "Create Credit Package",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"studentId\": 1,\n  \"courseId\": 1,\n  \"totalCredits\": 10,\n  \"expiresAt\": \"2026-12-31T23:59:59.000Z\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/credit-packages",
+              "host": ["{{base_url}}"],
+              "path": ["credit-packages"]
+            },
+            "description": "Creates a credit package for a student. `courseId` is optional — omit for a global (all-course) package."
+          }
+        },
+        {
+          "name": "Get All Credit Packages",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/credit-packages?studentId=1",
+              "host": ["{{base_url}}"],
+              "path": ["credit-packages"],
+              "query": [
+                {
+                  "key": "studentId",
+                  "value": "1",
+                  "description": "Optional — filter packages by student ID"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Credit Package by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/credit-packages/1",
+              "host": ["{{base_url}}"],
+              "path": ["credit-packages", "1"]
+            }
+          }
+        },
+        {
+          "name": "Update Credit Package",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"expiresAt\": \"2027-06-30T23:59:59.000Z\",\n  \"totalCredits\": 15\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/credit-packages/1",
+              "host": ["{{base_url}}"],
+              "path": ["credit-packages", "1"]
+            },
+            "description": "Partially updates a credit package. All fields are optional."
+          }
+        },
+        {
+          "name": "Delete Credit Package",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/credit-packages/1",
+              "host": ["{{base_url}}"],
+              "path": ["credit-packages", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Class Sessions",
+      "description": "Scheduled class session management. Create/update/delete requires HQ_ADMIN or BRANCH_MANAGER. BranchAccessGuard enforces cross-branch isolation.",
+      "item": [
+        {
+          "name": "Create Class Session",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"branchId\": 1,\n  \"courseId\": 1,\n  \"scheduledAt\": \"2026-07-15T09:00:00.000Z\",\n  \"durationMin\": 60,\n  \"totalSeats\": 10\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/class-sessions",
+              "host": ["{{base_url}}"],
+              "path": ["class-sessions"]
+            },
+            "description": "HQ_ADMIN or BRANCH_MANAGER only. `durationMin` is optional (defaults set by DB)."
+          }
+        },
+        {
+          "name": "Get All Class Sessions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/class-sessions?branchId=1",
+              "host": ["{{base_url}}"],
+              "path": ["class-sessions"],
+              "query": [
+                {
+                  "key": "branchId",
+                  "value": "1",
+                  "description": "Optional — filter sessions by branch ID"
+                }
+              ]
+            },
+            "description": "Returns class sessions. BRANCH_MANAGER/STAFF are automatically scoped to their branch."
+          }
+        },
+        {
+          "name": "Get Class Session by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/class-sessions/1",
+              "host": ["{{base_url}}"],
+              "path": ["class-sessions", "1"]
+            }
+          }
+        },
+        {
+          "name": "Update Class Session",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheduledAt\": \"2026-07-15T10:00:00.000Z\",\n  \"durationMin\": 90,\n  \"totalSeats\": 12\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/class-sessions/1",
+              "host": ["{{base_url}}"],
+              "path": ["class-sessions", "1"]
+            },
+            "description": "HQ_ADMIN or BRANCH_MANAGER only. All fields are optional."
+          }
+        },
+        {
+          "name": "Delete Class Session",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/class-sessions/1",
+              "host": ["{{base_url}}"],
+              "path": ["class-sessions", "1"]
+            },
+            "description": "HQ_ADMIN or BRANCH_MANAGER only."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Bookings",
+      "description": "Student booking management. Handles creation, attendance marking, and cancellation.",
+      "item": [
+        {
+          "name": "Create Booking",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"studentId\": 1,\n  \"classSessionId\": 1,\n  \"packageId\": 1\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/bookings",
+              "host": ["{{base_url}}"],
+              "path": ["bookings"]
+            },
+            "description": "`packageId` is optional — if omitted, the system auto-selects the best valid package (course-specific first, earliest expiry first). Guarded against overbooking, double-booking, and time overlaps."
+          }
+        },
+        {
+          "name": "Get All Bookings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/bookings?classSessionId=1&studentId=1",
+              "host": ["{{base_url}}"],
+              "path": ["bookings"],
+              "query": [
+                {
+                  "key": "classSessionId",
+                  "value": "1",
+                  "description": "Optional — filter by class session"
+                },
+                {
+                  "key": "studentId",
+                  "value": "1",
+                  "description": "Optional — filter by student"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Booking by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/bookings/1",
+              "host": ["{{base_url}}"],
+              "path": ["bookings", "1"]
+            }
+          }
+        },
+        {
+          "name": "Mark Attendance",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"ATTENDED\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/bookings/1/attendance",
+              "host": ["{{base_url}}"],
+              "path": ["bookings", "1", "attendance"]
+            },
+            "description": "Transitions booking status. Valid values: ATTENDED, SKIPPED, ABSENT, CANCELLED. ATTENDED and SKIPPED trigger credit deduction. SKIPPED atomically creates a Compensation record. Terminal states (ATTENDED, SKIPPED, ABSENT) cannot be changed."
+          }
+        },
+        {
+          "name": "Cancel Booking",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/bookings/1",
+              "host": ["{{base_url}}"],
+              "path": ["bookings", "1"]
+            },
+            "description": "Cancels a BOOKED booking and refunds the credit. Returns 200 with updated booking."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Compensations",
+      "description": "Compensation records issued when a student skips a class. Resolution requires HQ_ADMIN or BRANCH_MANAGER.",
+      "item": [
+        {
+          "name": "Create Compensation",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookingId\": 1,\n  \"type\": \"MAKEUP_CLASS\",\n  \"note\": \"Student requested a makeup class for the missed session.\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/compensations",
+              "host": ["{{base_url}}"],
+              "path": ["compensations"]
+            },
+            "description": "Valid `type` values: MAKEUP_CLASS, SEAT_CREDIT, EXPIRY_EXTENSION. Typically created automatically on SKIPPED attendance, but can be created manually."
+          }
+        },
+        {
+          "name": "Get All Compensations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/compensations?status=PENDING",
+              "host": ["{{base_url}}"],
+              "path": ["compensations"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "PENDING",
+                  "description": "Optional — filter by CompensationStatus. Valid: PENDING, RESOLVED, REJECTED"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Compensation by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/compensations/1",
+              "host": ["{{base_url}}"],
+              "path": ["compensations", "1"]
+            }
+          }
+        },
+        {
+          "name": "Resolve Compensation",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"RESOLVED\",\n  \"note\": \"Makeup class scheduled for 2026-07-20.\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/compensations/1/resolve",
+              "host": ["{{base_url}}"],
+              "path": ["compensations", "1", "resolve"]
+            },
+            "description": "HQ_ADMIN or BRANCH_MANAGER only. `status` must be RESOLVED or REJECTED. Once RESOLVED, the record cannot be modified further."
+          }
+        }
+      ]
+    }
+  ]
+}
