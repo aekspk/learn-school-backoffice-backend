@@ -15,6 +15,7 @@ import { UserResponseDto } from 'src/users/dtos/user-response.dto';
 import { RegisterAuthGuard } from './guards/register-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 import type { User } from '@prisma/client';
+import type { AuthUser } from './models/current-user.model';
 import { LoginAuthGuard } from './guards/login-auth.guard';
 import { ProfileWithTokenDto } from './dtos/profile-with-tokens.dto';
 import { AccessTokenAuthGuard } from './guards/access-token-auth.guard';
@@ -56,7 +57,7 @@ export class AuthController {
   // GET /auth/profile
   @Get('profile')
   @UseGuards(AccessTokenAuthGuard)
-  async getProfile(@CurrentUser() user: User) {
+  async getProfile(@CurrentUser() user: AuthUser) {
     const profile = await this.authService.getProfile(user.id);
     return new UserResponseDto(profile);
   }
@@ -65,7 +66,7 @@ export class AuthController {
   @Patch('profile')
   @UploadFileInterceptor('image', { destination: 'uploads/users' })
   async updateProfile(
-    @CurrentUser() user: User,
+    @CurrentUser() user: AuthUser,
     @UploadedFile() file: Express.Multer.File,
     @Body() form: Omit<UpdateUserDto, 'image'>,
   ) {
@@ -81,7 +82,7 @@ export class AuthController {
   @Delete('logout')
   @UseGuards(AccessTokenAuthGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
-  logout(@CurrentUser() user: User) {
+  logout(@CurrentUser() user: AuthUser) {
     return this.authService.logout(user.id);
   }
 }

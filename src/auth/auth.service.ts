@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { User } from '@prisma/client';
 import { UsersService } from 'src/users/users.service';
+import { PrismaService } from 'src/core/services/prisma.service';
 import type { StringValue } from 'ms';
 import ms from 'ms';
 import * as bcrypt from 'bcrypt';
@@ -12,6 +13,7 @@ import { UpdateUserDto } from 'src/users/dtos/update-user.dto';
 export class AuthService {
   constructor(
     private readonly userService: UsersService,
+    private readonly prisma: PrismaService,
     private jwtService: JwtService,
   ) {}
 
@@ -21,6 +23,11 @@ export class AuthService {
     const accessTokenExpireIn = process.env
       .ACCESS_TOKEN_EXPIRE_IN as StringValue;
 
+    const branch = user.branchId
+      ? await this.prisma.branch.findUnique({ where: { id: user.branchId } })
+      : null;
+    const branchName = branch?.name ?? 'HQ';
+
     const refreshToken = this.jwtService.sign(
       {},
       {
@@ -29,7 +36,12 @@ export class AuthService {
       },
     );
     const accessToken = this.jwtService.sign(
-      { sub: user.id, role: user.role, branchId: user.branchId ?? null },
+      {
+        sub: user.id,
+        role: user.role,
+        branchId: user.branchId ?? null,
+        branchName,
+      },
       {
         secret: process.env.ACCESS_TOKEN_SECRET_KEY,
         expiresIn: accessTokenExpireIn,

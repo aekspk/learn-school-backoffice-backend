@@ -13,7 +13,7 @@ import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { BookingsService } from './bookings.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { MarkAttendanceDto } from './dto/mark-attendance.dto';
-import type { User } from '@prisma/client';
+import type { AuthUser } from 'src/auth/models/current-user.model';
 import { MarkAttendancesDto } from './dto/mark-attendances.dto ';
 
 @Controller('bookings')
@@ -49,7 +49,7 @@ export class BookingsController {
   markAttendance(
     @Param('bookingId', ParseIntPipe) bookingId: number,
     @Body() dto: MarkAttendanceDto,
-    @CurrentUser() user: User,
+    @CurrentUser() user: AuthUser,
   ) {
     return this.bookingsService.markAttendance(bookingId, dto, user.id);
   }
@@ -58,7 +58,7 @@ export class BookingsController {
   @Auth()
   markAttendances(
     @Body() dto: MarkAttendancesDto[],
-    @CurrentUser() user: User,
+    @CurrentUser() user: AuthUser,
   ) {
     return this.bookingsService.markAttendances(dto, user.id);
   }

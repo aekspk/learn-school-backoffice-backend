@@ -9,7 +9,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { CompensationStatus } from '@prisma/client';
-import type { User } from '@prisma/client';
+import type { AuthUser } from 'src/auth/models/current-user.model';
 import { Auth } from 'src/auth/guards/auth.guard';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { CompensationsService } from './compensations.service';
@@ -29,7 +29,7 @@ export class CompensationsController {
   @Get()
   @Auth()
   findAll(
-    @CurrentUser() user: User,
+    @CurrentUser() user: AuthUser,
     @Query('status') status?: CompensationStatus,
   ) {
     return this.compensationsService.findAll(Number(user.branchId), status);
@@ -47,7 +47,7 @@ export class CompensationsController {
   resolve(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: ResolveCompensationDto,
-    @CurrentUser() user: User,
+    @CurrentUser() user: AuthUser,
   ) {
     return this.compensationsService.resolve(id, dto, user.id);
   }

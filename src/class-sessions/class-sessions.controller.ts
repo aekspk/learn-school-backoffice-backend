@@ -9,7 +9,7 @@ import {
   Post,
 } from '@nestjs/common';
 import { Role } from '@prisma/client';
-import type { User } from '@prisma/client';
+import type { AuthUser } from 'src/auth/models/current-user.model';
 import { Auth } from 'src/auth/guards/auth.guard';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { ClassSessionsService } from './class-sessions.service';
@@ -22,13 +22,13 @@ export class ClassSessionsController {
 
   @Post()
   @Auth(Role.HQ_ADMIN, Role.BRANCH_MANAGER, Role.BRANCH_STAFF)
-  create(@CurrentUser() user: User, @Body() dto: CreateClassSessionDto) {
+  create(@CurrentUser() user: AuthUser, @Body() dto: CreateClassSessionDto) {
     return this.classSessionsService.create(user.branchId!, dto);
   }
 
   @Get()
   @Auth()
-  findAll(@CurrentUser() user: User) {
+  findAll(@CurrentUser() user: AuthUser) {
     return this.classSessionsService.findAll(user.branchId ?? undefined);
   }
 

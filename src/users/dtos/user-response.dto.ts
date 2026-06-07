@@ -20,7 +20,11 @@ export class UserResponseDto {
   @Expose()
   branchId: number;
 
-  constructor(user: Partial<User>) {
+  @Expose()
+  branchName: string;
+
+  constructor(user: Partial<User> & { branch?: { name: string } | null }) {
     Object.assign(this, user);
+    this.branchName = user.branch?.name ?? 'HQ';
   }
 }

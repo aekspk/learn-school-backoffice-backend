@@ -16,6 +16,11 @@ export class AccessTokenStrategy extends PassportStrategy(
   }
 
   validate(payload: AccessTokenPayload) {
-    return { id: payload.sub, role: payload.role, branchId: payload.branchId };
+    return {
+      id: payload.sub,
+      role: payload.role,
+      branchId: payload.branchId,
+      branchName: payload.branchName,
+    };
   }
 }
