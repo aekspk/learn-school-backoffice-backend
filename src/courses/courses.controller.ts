@@ -36,6 +36,12 @@ export class CoursesController {
     return this.coursesService.findOne(id);
   }
 
+  @Get(':id')
+  @Auth()
+  findCourseLessons(@Param('id', ParseIntPipe) id: number) {
+    return this.coursesService.findCourseLessons(id);
+  }
+
   @Patch(':id')
   @Auth(Role.HQ_ADMIN)
   update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateCourseDto) {

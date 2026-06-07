@@ -1,5 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { PackageStatus } from '@prisma/client';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/core/services/prisma.service';
 import { CreateCreditPackageDto } from './dto/create-credit-package.dto';
 import { UpdateCreditPackageDto } from './dto/update-credit-package.dto';
@@ -12,6 +15,7 @@ export class CreditPackagesService {
     return this.prisma.creditPackage.findMany({
       where: studentId ? { studentId } : undefined,
       orderBy: { expiresAt: 'asc' },
+      include: { course: true },
     });
   }
 
@@ -21,12 +25,19 @@ export class CreditPackagesService {
     return pkg;
   }
 
-  create(dto: CreateCreditPackageDto) {
-    return this.prisma.creditPackage.create({
+  async create(dto: CreateCreditPackageDto) {
+    const existingPkg = await this.prisma.creditPackage.findFirst({
+      where: { courseId: dto.courseId, studentId: dto.studentId },
+      select: { id: true },
+    });
+
+    if (existingPkg)
+      throw new ConflictException('Credit package already exists');
+
+    return await this.prisma.creditPackage.create({
       data: {
         ...dto,
         remainingCredits: dto.totalCredits,
-        status: PackageStatus.ACTIVE,
       },
     });
   }

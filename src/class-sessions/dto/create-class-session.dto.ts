@@ -4,10 +4,6 @@ import { IsDate, IsInt, IsOptional, IsPositive } from 'class-validator';
 export class CreateClassSessionDto {
   @IsInt()
   @IsPositive()
-  branchId: number;
-
-  @IsInt()
-  @IsPositive()
   courseId: number;
 
   @Type(() => Date)

@@ -1,6 +1,5 @@
 import { Role, User } from '@prisma/client';
-import { Expose, Type } from 'class-transformer';
-import { UserAddressDto } from './user-address.dto';
+import { Expose } from 'class-transformer';
 
 export class UserResponseDto {
   @Expose()
@@ -19,8 +18,7 @@ export class UserResponseDto {
   role: Role;
 
   @Expose()
-  @Type(() => UserAddressDto)
-  address: UserAddressDto;
+  branchId: number;
 
   constructor(user: Partial<User>) {
     Object.assign(this, user);

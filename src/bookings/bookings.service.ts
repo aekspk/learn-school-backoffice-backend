@@ -5,22 +5,11 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import {
-  BookingStatus,
-  CompensationType,
-  PackageStatus,
-  Prisma,
-} from '@prisma/client';
+import { BookingStatus, Prisma } from '@prisma/client';
 import { PrismaService } from 'src/core/services/prisma.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { MarkAttendanceDto } from './dto/mark-attendance.dto';
-
-const TERMINAL_STATUSES: BookingStatus[] = [
-  BookingStatus.ATTENDED,
-  BookingStatus.SKIPPED,
-  BookingStatus.ABSENT,
-  BookingStatus.CANCELLED,
-];
+import { MarkAttendancesDto } from './dto/mark-attendances.dto ';
 
 @Injectable()
 export class BookingsService {
@@ -66,15 +55,12 @@ export class BookingsService {
 
       // EC#4 — validate package is active, unexpired, and has credits
       // EC#5 — course-specific package must match this session's course
-      const pkg = await tx.creditPackage.findUnique({
-        where: { id: dto.packageId },
+      const pkg = await tx.creditPackage.findFirst({
+        where: { studentId: dto.studentId, courseId: session.courseId },
       });
       if (!pkg) throw new NotFoundException('Credit package not found');
       if (pkg.studentId !== dto.studentId) {
         throw new ForbiddenException('Package does not belong to this student');
-      }
-      if (pkg.status !== PackageStatus.ACTIVE) {
-        throw new BadRequestException('Credit package is not active');
       }
       if (pkg.expiresAt <= new Date()) {
         throw new BadRequestException('Credit package has expired');
@@ -120,7 +106,7 @@ export class BookingsService {
           data: {
             studentId: dto.studentId,
             classSessionId: dto.classSessionId,
-            packageId: dto.packageId,
+            packageId: pkg.id,
           },
         });
       } catch (err) {
@@ -143,102 +129,90 @@ export class BookingsService {
     dto: MarkAttendanceDto,
     markedById: number,
   ) {
-    return this.prisma.$transaction(async (tx) => {
-      const booking = await tx.booking.findUnique({
-        where: { id: bookingId },
-      });
-      if (!booking) throw new NotFoundException('Booking not found');
+    return this.prisma.$transaction((tx) =>
+      this.markAttendanceInTx(tx, bookingId, dto.status, markedById),
+    );
+  }
 
-      // EC#3 — terminal states are immutable
-      if (TERMINAL_STATUSES.includes(booking.status)) {
-        throw new BadRequestException(
-          `Cannot update a booking already in terminal status: ${booking.status}`,
+  async markAttendances(dtos: MarkAttendancesDto[], markedById: number) {
+    return this.prisma.$transaction(async (tx) => {
+      const results: Awaited<ReturnType<typeof this.markAttendanceInTx>>[] = [];
+      for (const dto of dtos) {
+        results.push(
+          await this.markAttendanceInTx(
+            tx,
+            dto.bookingId,
+            dto.status,
+            markedById,
+          ),
         );
       }
-
-      const { status } = dto;
-
-      if (
-        status === BookingStatus.ATTENDED ||
-        status === BookingStatus.ABSENT
-      ) {
-        // EC#2 — pessimistic lock on package to prevent simultaneous credit deduction
-        await tx.$queryRaw`SELECT id FROM "CreditPackage" WHERE id = ${booking.packageId} FOR UPDATE`;
-
-        const pkg = await tx.creditPackage.findUnique({
-          where: { id: booking.packageId },
-        });
-        if (!pkg || pkg.remainingCredits < 1) {
-          throw new BadRequestException('Insufficient credits in the package');
-        }
-
-        const newRemaining = pkg.remainingCredits - 1;
-        await tx.creditPackage.update({
-          where: { id: booking.packageId },
-          data: {
-            remainingCredits: newRemaining,
-            ...(newRemaining === 0 && { status: PackageStatus.DEPLETED }),
-          },
-        });
-
-        await tx.creditTransaction.create({
-          data: {
-            packageId: booking.packageId,
-            bookingId: booking.id,
-            delta: -1,
-            reason:
-              status === BookingStatus.ATTENDED
-                ? 'Class attended'
-                : 'Absent from class',
-          },
-        });
-      }
-
-      // EC#7 — compensation is created atomically on SKIPPED
-      if (status === BookingStatus.SKIPPED) {
-        await tx.compensation.create({
-          data: {
-            bookingId: booking.id,
-            type: CompensationType.SEAT_CREDIT,
-          },
-        });
-      }
-
-      // Release the reserved seat on CANCELLED
-      if (status === BookingStatus.CANCELLED) {
-        await tx.classSession.update({
-          where: { id: booking.classSessionId },
-          data: { bookedSeats: { decrement: 1 } },
-        });
-      }
-
-      return tx.booking.update({
-        where: { id: bookingId },
-        data: { status, markedById, markedAt: new Date() },
-      });
+      return results;
     });
   }
 
-  async cancelBooking(bookingId: number) {
-    return this.prisma.$transaction(async (tx) => {
-      const booking = await tx.booking.findUnique({ where: { id: bookingId } });
-      if (!booking) throw new NotFoundException('Booking not found');
+  private async markAttendanceInTx(
+    tx: Prisma.TransactionClient,
+    bookingId: number,
+    status: BookingStatus,
+    markedById: number,
+  ) {
+    const TERMINAL_STATUSES: BookingStatus[] = [
+      BookingStatus.ATTENDED,
+      BookingStatus.SKIPPED,
+      BookingStatus.ABSENT,
+    ];
 
-      if (TERMINAL_STATUSES.includes(booking.status)) {
-        throw new BadRequestException(
-          `Cannot cancel a booking in terminal status: ${booking.status}`,
-        );
+    const booking = await tx.booking.findUnique({ where: { id: bookingId } });
+    if (!booking) throw new NotFoundException('Booking not found');
+
+    // EC#3 — terminal states are immutable
+    if (TERMINAL_STATUSES.includes(booking.status)) {
+      throw new BadRequestException(
+        `Cannot update a booking already in terminal status: ${booking.status}`,
+      );
+    }
+
+    if (status === BookingStatus.ATTENDED || status === BookingStatus.ABSENT) {
+      // EC#2 — pessimistic lock on package to prevent simultaneous credit deduction
+      await tx.$queryRaw`SELECT id FROM "CreditPackage" WHERE id = ${booking.packageId} FOR UPDATE`;
+
+      const pkg = await tx.creditPackage.findUnique({
+        where: { id: booking.packageId },
+      });
+      if (!pkg || pkg.remainingCredits < 1) {
+        throw new BadRequestException('Insufficient credits in the package');
       }
 
-      await tx.classSession.update({
-        where: { id: booking.classSessionId },
-        data: { bookedSeats: { decrement: 1 } },
+      const newRemaining = pkg.remainingCredits - 1;
+      await tx.creditPackage.update({
+        where: { id: booking.packageId },
+        data: { remainingCredits: newRemaining },
       });
 
-      return tx.booking.update({
-        where: { id: bookingId },
-        data: { status: BookingStatus.CANCELLED },
+      await tx.creditTransaction.create({
+        data: {
+          packageId: booking.packageId,
+          bookingId: booking.id,
+          delta: -1,
+          reason:
+            status === BookingStatus.ATTENDED
+              ? 'Class attended'
+              : 'Absent from class',
+        },
       });
+    }
+
+    // EC#7 — compensation is created atomically on SKIPPED
+    if (status === BookingStatus.SKIPPED) {
+      await tx.compensation.create({
+        data: { bookingId: booking.id },
+      });
+    }
+
+    return tx.booking.update({
+      where: { id: bookingId },
+      data: { status, markedById, markedAt: new Date() },
     });
   }
 }

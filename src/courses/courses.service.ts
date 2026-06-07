@@ -17,6 +17,15 @@ export class CoursesService {
     return course;
   }
 
+  async findCourseLessons(id: number) {
+    const courseLessons = await this.prisma.courseLesson.findMany({
+      where: { courseId: id },
+    });
+    if (!courseLessons) throw new NotFoundException('Course lessons not found');
+
+    return courseLessons;
+  }
+
   create(dto: CreateCourseDto) {
     return this.prisma.course.create({ data: dto });
   }

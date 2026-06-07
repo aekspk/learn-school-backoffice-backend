@@ -8,8 +8,4 @@ export class CreateBookingDto {
   @IsInt()
   @IsPositive()
   classSessionId: number;
-
-  @IsInt()
-  @IsPositive()
-  packageId: number;
 }

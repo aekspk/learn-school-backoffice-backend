@@ -14,31 +14,61 @@ export class ClassSessionsService {
   findAll(branchId?: number) {
     return this.prisma.classSession.findMany({
       where: branchId ? { branchId } : undefined,
-      include: { course: true, branch: true },
+      include: {
+        course: true,
+        branch: true,
+        courseLesson: true,
+        bookings: true,
+      },
       orderBy: { scheduledAt: 'asc' },
+    });
+  }
+
+  async findEligibleStudents(id: number) {
+    const session = await this.findOne(id);
+
+    return this.prisma.student.findMany({
+      where: {
+        // must have at least one active, unexpired package with credits for this course
+        creditPackages: {
+          some: {
+            expiresAt: { gt: new Date() },
+            remainingCredits: { gte: 1 },
+            courseId: session.courseId,
+          },
+        },
+        // must not already be booked into any session covering the same lesson
+        bookings: {
+          none: session.courseLessonId
+            ? { classSession: { courseLessonId: session.courseLessonId } }
+            : { classSessionId: id },
+        },
+      },
     });
   }
 
   async findOne(id: number) {
     const session = await this.prisma.classSession.findUnique({
       where: { id },
-      include: { course: true, branch: true },
+      include: {
+        course: true,
+        branch: true,
+        courseLesson: true,
+        bookings: { include: { student: true } },
+      },
     });
     if (!session) throw new NotFoundException('Class session not found');
     return session;
   }
 
-  create(dto: CreateClassSessionDto) {
-    return this.prisma.classSession.create({ data: dto });
+  create(branchId: number, dto: CreateClassSessionDto) {
+    return this.prisma.classSession.create({ data: { ...dto, branchId } });
   }
 
   async update(id: number, dto: UpdateClassSessionDto) {
     const session = await this.findOne(id);
 
-    if (
-      dto.totalSeats !== undefined &&
-      dto.totalSeats < session.bookedSeats
-    ) {
+    if (dto.totalSeats !== undefined && dto.totalSeats < session.bookedSeats) {
       throw new BadRequestException(
         'Cannot reduce totalSeats below current bookedSeats',
       );

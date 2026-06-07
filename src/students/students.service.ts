@@ -34,6 +34,11 @@ export class StudentsService {
   findPackages(studentId: number) {
     return this.prisma.creditPackage.findMany({
       where: { studentId },
+      include: {
+        course: {
+          include: { classSessions: { include: { courseLesson: true } } },
+        },
+      },
       orderBy: { expiresAt: 'asc' },
     });
   }

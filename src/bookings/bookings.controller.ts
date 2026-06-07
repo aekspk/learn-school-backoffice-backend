@@ -1,10 +1,7 @@
 import {
   Body,
   Controller,
-  Delete,
   Get,
-  HttpCode,
-  HttpStatus,
   Param,
   ParseIntPipe,
   Patch,
@@ -13,10 +10,11 @@ import {
 } from '@nestjs/common';
 import { Auth } from 'src/auth/guards/auth.guard';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
-import type { AccessTokenPayload } from 'src/auth/models/access-token-payload.model';
 import { BookingsService } from './bookings.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { MarkAttendanceDto } from './dto/mark-attendance.dto';
+import type { User } from '@prisma/client';
+import { MarkAttendancesDto } from './dto/mark-attendances.dto ';
 
 @Controller('bookings')
 export class BookingsController {
@@ -46,20 +44,22 @@ export class BookingsController {
     return this.bookingsService.findOne(id);
   }
 
-  @Patch(':id/attendance')
+  @Patch(':bookingId/attendance')
   @Auth()
   markAttendance(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('bookingId', ParseIntPipe) bookingId: number,
     @Body() dto: MarkAttendanceDto,
-    @CurrentUser() user: AccessTokenPayload,
+    @CurrentUser() user: User,
   ) {
-    return this.bookingsService.markAttendance(id, dto, user.sub);
+    return this.bookingsService.markAttendance(bookingId, dto, user.id);
   }
 
-  @Delete(':id')
+  @Patch('/attendances')
   @Auth()
-  @HttpCode(HttpStatus.OK)
-  cancel(@Param('id', ParseIntPipe) id: number) {
-    return this.bookingsService.cancelBooking(id);
+  markAttendances(
+    @Body() dto: MarkAttendancesDto[],
+    @CurrentUser() user: User,
+  ) {
+    return this.bookingsService.markAttendances(dto, user.id);
   }
 }

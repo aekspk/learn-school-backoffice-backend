@@ -1,5 +1,5 @@
-import { CompensationStatus } from '@prisma/client';
-import { IsIn, IsOptional, IsString } from 'class-validator';
+import { CompensationStatus, CompensationType } from '@prisma/client';
+import { IsEnum, IsIn, IsOptional, IsString } from 'class-validator';
 
 const ALLOWED_STATUSES = [
   CompensationStatus.RESOLVED,
@@ -9,6 +9,10 @@ const ALLOWED_STATUSES = [
 export class ResolveCompensationDto {
   @IsIn(ALLOWED_STATUSES)
   status: CompensationStatus;
+
+  @IsEnum(CompensationType)
+  @IsOptional()
+  type?: CompensationType;
 
   @IsString()
   @IsOptional()

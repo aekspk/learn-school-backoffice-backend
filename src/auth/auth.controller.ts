@@ -21,7 +21,6 @@ import { AccessTokenAuthGuard } from './guards/access-token-auth.guard';
 import { UploadFileInterceptor } from 'src/core/interceptors/upload-file.interceptor';
 import { UpdateUserDto } from 'src/users/dtos/update-user.dto';
 import { RefreshTokenAuthGuard } from './guards/refresh-token-auth.guard';
-import type { AccessTokenPayload } from './models/access-token-payload.model';
 
 @Controller('auth')
 export class AuthController {
@@ -82,7 +81,7 @@ export class AuthController {
   @Delete('logout')
   @UseGuards(AccessTokenAuthGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
-  logout(@CurrentUser() user: AccessTokenPayload) {
-    return this.authService.logout(user.sub);
+  logout(@CurrentUser() user: User) {
+    return this.authService.logout(user.id);
   }
 }

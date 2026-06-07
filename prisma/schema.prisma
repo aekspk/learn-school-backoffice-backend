@@ -14,15 +14,11 @@ enum Role {
   BRANCH_STAFF
 }
 
-// Strictly matches the 4 business states defined in the assignment spec.
-// CANCELLED is added as a practical necessity (pre-class cancellation) but is
-// outside the 4 required states and carries no credit deduction.
 enum BookingStatus {
   BOOKED // Seat reserved. Credit deduction: 0. Reduces available seats by 1.
   ATTENDED // Attended class. Credit deduction: -1.
   SKIPPED // Approved leave. Credit deduction: 0. Compensation MUST be issued.
   ABSENT // No-show. Credit deduction: -1. No compensation granted.
-  CANCELLED // Outside spec — booking voided before class. Seat released.
 }
 
 // Matches the exact three compensation mechanisms named in the assignment spec.
@@ -36,13 +32,6 @@ enum CompensationStatus {
   PENDING
   RESOLVED
   REJECTED
-}
-
-enum PackageStatus {
-  ACTIVE
-  EXPIRED
-  DEPLETED
-  CANCELLED
 }
 
 // ─── Models ──────────────────────────────────────────────────────────────────
@@ -90,46 +79,60 @@ model Course {
   totalSessions  Int
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
+  courseLessons  CourseLesson[]
   classSessions  ClassSession[]
   // Only course-specific packages appear here; global packages have courseId = null
   creditPackages CreditPackage[]
 }
 
+model CourseLesson {
+  id            Int            @id @default(autoincrement())
+  courseId      Int
+  order         Int
+  topic         String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  course        Course         @relation(fields: [courseId], references: [id])
+  classSessions ClassSession[]
+
+  @@unique([courseId, order])
+  @@index([courseId])
+}
+
 model CreditPackage {
   id               Int                 @id @default(autoincrement())
   studentId        Int
-  // null = global package, usable across any course
-  courseId         Int?
+  courseId         Int
   totalCredits     Int
   remainingCredits Int
   expiresAt        DateTime
-  status           PackageStatus       @default(ACTIVE)
   createdAt        DateTime            @default(now())
   updatedAt        DateTime            @updatedAt
   student          Student             @relation(fields: [studentId], references: [id])
-  course           Course?             @relation(fields: [courseId], references: [id])
+  course           Course              @relation(fields: [courseId], references: [id])
   bookings         Booking[]
   transactions     CreditTransaction[]
 
-  @@index([studentId, status])
   @@index([studentId, expiresAt])
 }
 
 model ClassSession {
-  id          Int       @id @default(autoincrement())
-  branchId    Int
-  courseId    Int
-  scheduledAt DateTime
-  durationMin Int       @default(60)
-  totalSeats  Int
+  id             Int           @id @default(autoincrement())
+  branchId       Int
+  courseId       Int
+  courseLessonId Int?
+  scheduledAt    DateTime
+  durationMin    Int           @default(60)
+  totalSeats     Int
   // INVARIANT: bookedSeats <= totalSeats — enforced at service layer and via
   // CHECK constraint in migration: CHECK (booked_seats <= total_seats)
-  bookedSeats Int       @default(0)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  branch      Branch    @relation(fields: [branchId], references: [id])
-  course      Course    @relation(fields: [courseId], references: [id])
-  bookings    Booking[]
+  bookedSeats    Int           @default(0)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  branch         Branch        @relation(fields: [branchId], references: [id])
+  course         Course        @relation(fields: [courseId], references: [id])
+  courseLesson   CourseLesson? @relation(fields: [courseLessonId], references: [id])
+  bookings       Booking[]
 
   @@index([branchId, scheduledAt])
   @@index([courseId])
@@ -182,7 +185,7 @@ model CreditTransaction {
 model Compensation {
   id           Int                @id @default(autoincrement())
   bookingId    Int                @unique
-  type         CompensationType
+  type         CompensationType?
   status       CompensationStatus @default(PENDING)
   note         String?
   resolvedById Int?

@@ -1,4 +1,4 @@
-import { IsIn } from 'class-validator';
+import { IsIn, IsNumber } from 'class-validator';
 import { BookingStatus } from '@prisma/client';
 
 const ALLOWED_STATUSES = [
@@ -7,7 +7,10 @@ const ALLOWED_STATUSES = [
   BookingStatus.ABSENT,
 ] as const;
 
-export class MarkAttendanceDto {
+export class MarkAttendancesDto {
+  @IsNumber()
+  bookingId: number;
+
   @IsIn(ALLOWED_STATUSES)
   status: BookingStatus;
 }

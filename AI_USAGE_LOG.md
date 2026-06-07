@@ -136,3 +136,18 @@ Each entry documents what was asked, what was produced, and the human judgment a
 - **What I changed or rejected — and why:** Consequence of the previous decision (global packages removed + courseId required). With no auto-selection needed, keeping `findBestPackageId` would be dead code.
 
 ---
+
+### 2026-06-05 — Add CourseLesson Table for Curriculum Definition
+
+- **What I asked:** Should `ClassSession` have a `name` field to describe the topic per session? And if a student buys a Python package with 10 sessions (Session 1: Data Types, Session 2: Control Flow, etc.), they get 10 credits — does that require a new table?
+
+- **What AI produced:**
+  Introduced a new `CourseLesson` model and updated two existing models:
+  1. **`CourseLesson` model added** — `courseId`, `order` (1-based sequence), `topic` (e.g. "Data Types"), `createdAt`, `updatedAt`. `@@unique([courseId, order])` prevents duplicate session numbers per course.
+  2. **`Course.lessons CourseLesson[]`** — back-relation added so a course owns its curriculum.
+  3. **`ClassSession.courseLessonId Int?`** — optional FK to `CourseLesson`; optional because sessions can be scheduled before the curriculum is fully defined, or as ad-hoc classes outside the fixed curriculum.
+  4. **Design rationale:** `CourseLesson` is a curriculum template (what will be taught), while `ClassSession` is a scheduled event (when/where it will be taught). Separating them avoids repeating topic strings across every scheduled instance and allows curriculum to be defined once and reused across branches.
+
+- **What I changed or rejected — and why:** `courseLessonId` kept optional (not required) — a `ClassSession` may be a makeup or ad-hoc class that doesn't map to a fixed curriculum slot. Forcing it required would break compensation flows that book students into substitute sessions.
+
+---
