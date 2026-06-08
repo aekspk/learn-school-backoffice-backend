@@ -8,7 +8,7 @@ export class StudentsService {
   constructor(private readonly prisma: PrismaService) {}
 
   findAll() {
-    return this.prisma.student.findMany({ orderBy: { name: 'asc' } });
+    return this.prisma.student.findMany({ orderBy: { createdAt: 'desc' } });
   }
 
   async findOne(id: number) {
