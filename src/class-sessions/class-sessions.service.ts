@@ -6,14 +6,24 @@ import {
 import { PrismaService } from 'src/core/services/prisma.service';
 import { CreateClassSessionDto } from './dto/create-class-session.dto';
 import { UpdateClassSessionDto } from './dto/update-class-session.dto';
-import { BookingStatus } from '@prisma/client';
+import { BookingStatus, Prisma } from '@prisma/client';
+import { DayGroup } from './entities/class-session-group.entity';
+
+type SessionWithRelations = Prisma.ClassSessionGetPayload<{
+  include: {
+    course: true;
+    branch: true;
+    courseLesson: true;
+    bookings: true;
+  };
+}>;
 
 @Injectable()
 export class ClassSessionsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  findAll(branchId?: number) {
-    return this.prisma.classSession.findMany({
+  async findAll(branchId?: number) {
+    const sessions = await this.prisma.classSession.findMany({
       where: branchId ? { branchId } : undefined,
       include: {
         course: true,
@@ -23,6 +33,8 @@ export class ClassSessionsService {
       },
       orderBy: { scheduledAt: 'asc' },
     });
+
+    return this.groupByDateAndCourse(sessions);
   }
 
   async findEligibleStudents(id: number) {
@@ -42,7 +54,10 @@ export class ClassSessionsService {
         bookings: {
           none: session.courseLessonId
             ? {
-                classSession: { courseLessonId: session.courseLessonId },
+                classSession: {
+                  id: session.id,
+                  courseLessonId: session.courseLessonId,
+                },
                 status: { not: BookingStatus.SKIPPED },
               }
             : { classSessionId: id },
@@ -84,5 +99,37 @@ export class ClassSessionsService {
   async remove(id: number) {
     await this.findOne(id);
     return this.prisma.classSession.delete({ where: { id } });
+  }
+
+  private groupByDateAndCourse(sessions: SessionWithRelations[]): DayGroup[] {
+    return sessions.reduce<DayGroup[]>((acc, s) => {
+      const date = s.scheduledAt;
+      const key = date.toISOString().slice(0, 10); // e.g. "2026-06-24"
+
+      let day = acc.find((d) => d.key === key);
+      if (!day) acc.push((day = { key, date, courseGroups: [] }));
+
+      let group = day.courseGroups.find((g) => g.courseId === s.courseId);
+      if (!group)
+        day.courseGroups.push(
+          (group = {
+            courseId: s.courseId,
+            courseName: s.course.name,
+            branchName: s.branch.name,
+            sessions: [],
+          }),
+        );
+
+      group.sessions.push({
+        id: s.id,
+        topic: s.courseLesson?.topic ?? null,
+        scheduledAt: s.scheduledAt,
+        durationMin: s.durationMin,
+        bookedSeats: s.bookedSeats,
+        totalSeats: s.totalSeats,
+      });
+
+      return acc;
+    }, []);
   }
 }
