@@ -6,6 +6,7 @@ import {
 import { PrismaService } from 'src/core/services/prisma.service';
 import { CreateClassSessionDto } from './dto/create-class-session.dto';
 import { UpdateClassSessionDto } from './dto/update-class-session.dto';
+import { BookingStatus } from '@prisma/client';
 
 @Injectable()
 export class ClassSessionsService {
@@ -40,7 +41,10 @@ export class ClassSessionsService {
         // must not already be booked into any session covering the same lesson
         bookings: {
           none: session.courseLessonId
-            ? { classSession: { courseLessonId: session.courseLessonId } }
+            ? {
+                classSession: { courseLessonId: session.courseLessonId },
+                status: { not: BookingStatus.SKIPPED },
+              }
             : { classSessionId: id },
         },
       },

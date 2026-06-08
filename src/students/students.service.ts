@@ -28,7 +28,17 @@ export class StudentsService {
 
   async remove(id: number) {
     await this.findOne(id);
-    return this.prisma.student.delete({ where: { id } });
+    return this.prisma.$transaction(async (tx) => {
+      await tx.compensation.deleteMany({
+        where: { booking: { studentId: id } },
+      });
+      await tx.creditTransaction.deleteMany({
+        where: { package: { studentId: id } },
+      });
+      await tx.booking.deleteMany({ where: { studentId: id } });
+      await tx.creditPackage.deleteMany({ where: { studentId: id } });
+      await tx.student.delete({ where: { id } });
+    });
   }
 
   findPackages(studentId: number) {

@@ -8,7 +8,6 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
-import { Role } from '@prisma/client';
 import { Auth } from 'src/auth/guards/auth.guard';
 import { StudentsService } from './students.service';
 import { CreateStudentDto } from './dto/create-student.dto';
@@ -55,7 +54,7 @@ export class StudentsController {
   }
 
   @Delete(':id')
-  @Auth(Role.HQ_ADMIN, Role.BRANCH_MANAGER)
+  @Auth()
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.studentsService.remove(id);
   }

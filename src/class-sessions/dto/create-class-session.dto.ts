@@ -6,6 +6,10 @@ export class CreateClassSessionDto {
   @IsPositive()
   courseId: number;
 
+  @IsInt()
+  @IsPositive()
+  courseLessonId: number;
+
   @Type(() => Date)
   @IsDate()
   scheduledAt: Date;

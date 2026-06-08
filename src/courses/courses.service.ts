@@ -8,7 +8,11 @@ export class CoursesService {
   constructor(private readonly prisma: PrismaService) {}
 
   findAll() {
-    return this.prisma.course.findMany({ orderBy: { name: 'asc' } });
+    return this.prisma.course.findMany({
+      where: {},
+      include: { courseLessons: true },
+      orderBy: { name: 'asc' },
+    });
   }
 
   async findOne(id: number) {
