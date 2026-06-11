@@ -1,99 +1,171 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Learn School Backoffice — Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+NestJS REST API for a school backoffice system (Class Sessions, Bookings, Credit Packages).
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+---
 
-## Description
+## Requirements
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+| Tool    | Version |
+| ------- | ------- |
+| Node.js | >= 20   |
+| pnpm    | >= 9    |
+| Docker  | >= 24   |
 
-## Project setup
+---
+
+## Getting Started
+
+### 1. Install dependencies
 
 ```bash
-$ pnpm install
+pnpm install
 ```
 
-## Compile and run the project
+### 2. Configure environment
 
 ```bash
-# development
-$ pnpm run start
-
-# watch mode
-$ pnpm run start:dev
-
-# production mode
-$ pnpm run start:prod
+cp .env.example .env
 ```
 
-## Run tests
+Edit `.env` for your local setup:
+
+```env
+ENV=local
+PORT=9191
+
+# Use this value if running PostgreSQL via docker compose
+DATABASE_URL="postgresql://myapp:mypassword@localhost:9111/shop?schema=public"
+
+ACCESS_TOKEN_SECRET_KEY=your-secret-key
+ACCESS_TOKEN_EXPIRE_IN=5m
+REFRESH_TOKEN_SECRET_KEY=your-refresh-secret-key
+REFRESH_TOKEN_EXPIRE_IN=1d
+```
+
+### 3. Start PostgreSQL with Docker
 
 ```bash
-# unit tests
-$ pnpm run test
-
-# e2e tests
-$ pnpm run test:e2e
-
-# test coverage
-$ pnpm run test:cov
+docker compose up db -d
 ```
 
-## Deployment
+> PostgreSQL runs on port **9111** (not the default 5432).
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+### 4. Sync Database Schema
 
 ```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
+pnpm db:push
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+> Dev only — syncs the Prisma schema to the database without creating migration files.
 
-## Resources
+### 5. Seed sample data (optional)
 
-Check out a few resources that may come in handy when working with NestJS:
+```bash
+pnpm db:seed
+```
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+### 6. Start the server
 
-## Support
+```bash
+pnpm start:dev
+```
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+Server runs at `http://localhost:9191`.
 
-## Stay in touch
+---
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+## Commands
 
-## License
+### Development
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
-# my-nest-js
+```bash
+pnpm start:dev        # Watch mode (auto reload)
+pnpm start:debug      # Watch mode + debug port
+pnpm build            # Compile TypeScript → dist/
+pnpm start:prod       # Run compiled output (requires build first)
+```
+
+### Database (Prisma)
+
+```bash
+pnpm db:push          # Sync schema → DB (dev only, no migration files)
+pnpm db:deploy        # Apply pending migrations (production)
+pnpm db:seed          # Run seed data
+pnpm db:reset         # Drop + recreate DB + re-seed
+pnpm db:studio        # Open Prisma Studio GUI at localhost:5555
+```
+
+### Code Quality
+
+```bash
+pnpm lint             # ESLint + auto-fix
+pnpm format           # Prettier
+```
+
+---
+
+## Project Structure
+
+```
+src/
+├── core/             # Global module (PrismaService, Redis, Auth guards)
+│   ├── errors/       # Custom errors (RecordNotFound, UniqueConstraint)
+│   ├── interceptors/ # UploadFileInterceptor
+│   └── services/     # PrismaService
+├── auth/             # POST /auth/* endpoints, Passport strategies
+├── users/            # UsersService (no controller)
+├── students/
+├── courses/
+├── class-sessions/
+├── bookings/
+├── credit-packages/
+└── compensations/
+prisma/
+├── schema.prisma     # Database schema
+└── seed.ts           # Seed data
+```
+
+---
+
+## API Overview
+
+Base URL: `http://localhost:9191`
+
+### Auth
+
+| Method | Path                  | Description                            |
+| ------ | --------------------- | -------------------------------------- |
+| POST   | `/auth/register`      | Register a new user                    |
+| POST   | `/auth/login`         | Login — returns access + refresh token |
+| POST   | `/auth/refresh-token` | Renew access token                     |
+| GET    | `/auth/profile`       | Get current user profile               |
+| PATCH  | `/auth/profile`       | Update current user profile            |
+
+> Protected routes require `Authorization: Bearer <access_token>` on every request.
+
+### Roles
+
+| Role             | branchId | Access          |
+| ---------------- | -------- | --------------- |
+| `HQ_ADMIN`       | none     | All branches    |
+| `BRANCH_MANAGER` | required | Own branch only |
+| `BRANCH_STAFF`   | required | Own branch only |
+
+---
+
+## Postman Collection
+
+Import `postman_collection.json` from the project root to test all API endpoints.
+
+---
+
+## Docker (Full Stack)
+
+To run the app and database together in Docker, uncomment the `app` service in `docker-compose.yml` and run:
+
+```bash
+docker compose up --build
+```
+
+> When running inside Docker, use the Docker `DATABASE_URL` (`@db:5432`) instead of localhost in `.env`.

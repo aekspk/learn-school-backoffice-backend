@@ -8,11 +8,19 @@ export class StudentsService {
   constructor(private readonly prisma: PrismaService) {}
 
   findAll() {
-    return this.prisma.student.findMany({ orderBy: { createdAt: 'desc' } });
+    return this.prisma.student.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
   }
 
   async findOne(id: number) {
-    const student = await this.prisma.student.findUnique({ where: { id } });
+    const student = await this.prisma.student.findUnique({
+      where: { id },
+      include: {
+        creditPackages: { include: { course: true } },
+        bookings: true,
+      },
+    });
     if (!student) throw new NotFoundException('Student not found');
     return student;
   }
