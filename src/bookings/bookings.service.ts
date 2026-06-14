@@ -76,26 +76,6 @@ export class BookingsService {
         );
       }
 
-      // EC#9 — reject if student already has an overlapping BOOKED session
-      const newStart = session.scheduledAt;
-      const newEnd = new Date(
-        newStart.getTime() + session.durationMin * 60_000,
-      );
-      const overlapping = await tx.$queryRaw<{ id: number }[]>`
-        SELECT b.id FROM "Booking" b
-        JOIN "ClassSession" cs ON b."classSessionId" = cs.id
-        WHERE b."studentId"      = ${dto.studentId}
-          AND b.status::text     = 'BOOKED'
-          AND cs."scheduledAt"   < ${newEnd}
-          AND (cs."scheduledAt" + cs."durationMin" * INTERVAL '1 minute') > ${newStart}
-          AND b."classSessionId" <> ${dto.classSessionId}
-      `;
-      if (overlapping.length > 0) {
-        throw new ConflictException(
-          'Student already has an overlapping booking',
-        );
-      }
-
       try {
         await tx.classSession.update({
           where: { id: dto.classSessionId },

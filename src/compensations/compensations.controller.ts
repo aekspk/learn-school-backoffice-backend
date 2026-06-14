@@ -41,7 +41,6 @@ export class CompensationsController {
     return this.compensationsService.findOne(id);
   }
 
-  // EC#8 — guard against modifying a RESOLVED compensation
   @Patch(':id/resolve')
   @Auth()
   resolve(
