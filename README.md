@@ -109,9 +109,7 @@ pnpm format           # Prettier
 
 ```
 src/
-├── core/             # Global module (PrismaService, Redis, Auth guards)
-│   ├── errors/       # Custom errors (RecordNotFound, UniqueConstraint)
-│   ├── interceptors/ # UploadFileInterceptor
+├── core/             # Global module
 │   └── services/     # PrismaService
 ├── auth/             # POST /auth/* endpoints, Passport strategies
 ├── users/            # UsersService (no controller)
