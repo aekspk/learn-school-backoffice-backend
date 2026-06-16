@@ -19,9 +19,9 @@ import type { AuthUser } from './models/current-user.model';
 import { LoginAuthGuard } from './guards/login-auth.guard';
 import { ProfileWithTokenDto } from './dtos/profile-with-tokens.dto';
 import { AccessTokenAuthGuard } from './guards/access-token-auth.guard';
-import { UploadFileInterceptor } from 'src/core/interceptors/upload-file.interceptor';
 import { UpdateUserDto } from 'src/users/dtos/update-user.dto';
 import { RefreshTokenAuthGuard } from './guards/refresh-token-auth.guard';
+import { UploadFileInterceptor } from 'src/core/interceptors/upload-file.interceptor';
 
 @Controller('auth')
 export class AuthController {
